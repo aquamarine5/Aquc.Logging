@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <SatelliteResourceLanguages>zh-hans;en-us</SatelliteResourceLanguages>
+    <BaseOutputPath>D:\Program Source\Aquacore</BaseOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <PackageReference Include="Huanent.Logging.File" Version="3.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Aquc.Netdisk\Aquc.Netdisk.Mail\Aquc.Netdisk.Mail.csproj" />
+  </ItemGroup>
+
+</Project>
