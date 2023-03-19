@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <DebugType>embedded</DebugType>
     <SatelliteResourceLanguages>zh-hans;en-us</SatelliteResourceLanguages>
     <BaseOutputPath>D:\Program Source\Aquacore</BaseOutputPath>
   </PropertyGroup>

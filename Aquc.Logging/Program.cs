@@ -50,7 +50,7 @@ internal class Program
                 }
             };
             process2.Start();
-            process2.WaitForExit();
+            await process2.WaitForExitAsync();
             _logger.LogInformation("Success schedule subscriptions-update-all");
         });
         uploadCommand.SetHandler(async () =>
@@ -72,6 +72,13 @@ internal class Program
             _logger?.LogInformation("Send log file to {m}", "3168287806@qq.com");
         });
         if (args.Length == 0) args = new string[] { "upload" };
-        await rootCommand.InvokeAsync(args);
+        try
+        {
+            await rootCommand.InvokeAsync(args);
+        }
+        catch(Exception ex)
+        {
+            _logger?.LogError("{ex} {msg}", ex.Message, ex.StackTrace);
+        }
     }
 }
