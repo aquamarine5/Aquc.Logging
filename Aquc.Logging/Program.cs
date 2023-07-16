@@ -56,7 +56,7 @@ internal class Program
         uploadCommand.SetHandler(async () =>
         {
             var mail = host.Services.GetRequiredService<MailService>();
-            var logFile = Path.Combine(Directory.GetCurrentDirectory(), "logs", $"{DateTime.Now:yyyMMdd}.txt");
+            var logFile = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "logs", $"{DateTime.Now:yyyMMdd}.txt");
             var content = string.Empty;
             if (File.Exists(logFile)) {
                 using var fs = new FileStream(logFile, FileMode.Open);
