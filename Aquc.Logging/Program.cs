@@ -1,84 +1,74 @@
-﻿using Aquc.Netdisk.Mail;
-using Huanent.Logging.File;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
+﻿using Serilog;
+using Serilog.Core;
 using System.CommandLine;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mail;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Aquc.Logging;
-
-internal class Program
+public class LoggingProgram
 {
-    static async Task Main(string[] args)
+    public static readonly Logger logger = new Func<Logger>(() =>
     {
-        using var host = new HostBuilder()
-            .ConfigureLogging(builder =>
-            {
-                builder.ClearProviders();
-                builder.AddFilter<ConsoleLoggerProvider>(level => level >= LogLevel.Debug);
-                builder.AddFilter<FileLoggerProvider>(level => level >= LogLevel.Debug);
-                builder.AddConsole();
-                builder.AddFile();
-            })
-            .ConfigureServices(container =>
-            {
-                container.TryAddSingleton(services=>
-                    new MailService(services.GetRequiredService<ILogger<MailService>>(),"aquamarine5@163.com", "TKFXIAGOFXKRIOSX", "smtp.163.com"));
-            })
-            .Build();
-        var _logger = host.Services.GetRequiredService<ILogger<Program>>();
+        return new LoggerConfiguration()
+            .WriteTo.File($"log/{DateTime.Now:yyyyMMdd}.log",shared:true)
+            .WriteTo.Console()
+            .MinimumLevel.Verbose()
+            .CreateLogger();
+    }).Invoke();
+
+    public const string MANIFEST_FILENAME = "Aquc.Logging.manifest.json";
+
+    public static async Task Main(string[] args)
+    {
+        ConsoleFix.BindToConsole();
+        var createCommand = new Command("create");
         var registerCommand = new Command("register");
         var uploadCommand = new Command("upload");
-        var rootCommand = new RootCommand()
+        createCommand.SetHandler(async () =>
         {
-            uploadCommand,
-            registerCommand
-        };
-        registerCommand.SetHandler(async () =>
-        {
-            using var process2 = new Process()
-            {
-                StartInfo = new ProcessStartInfo()
+            await File.WriteAllTextAsync(MANIFEST_FILENAME,
+                JsonSerializer.Serialize(new LoggingManifest()
                 {
-                    FileName = "schtasks",
-                    Arguments = $"/Create /F /SC daily /st 20:00 /TR \"'{Environment.ProcessPath + "' upload"}\" /TN \"Aquacore\\Aquc.Logging.UploadLogFileSchtask\"",
-                    CreateNoWindow = true
-                }
-            };
-            process2.Start();
-            await process2.WaitForExitAsync();
-            _logger.LogInformation("Success schedule subscriptions-update-all");
+                    mailAccountConfigs = new()
+                    {
+                        new("mail.host.com","username","password",45,"Foo","sendto@foo.com", "sendfrom@foo.com")
+                    }
+                }, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true })
+            );
         });
         uploadCommand.SetHandler(async () =>
         {
-            var mail = host.Services.GetRequiredService<MailService>();
-            var logFile = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "logs", $"{DateTime.Now:yyyMMdd}.txt");
-            var content = string.Empty;
-            if (File.Exists(logFile)) {
-                using var fs = new FileStream(logFile, FileMode.Open);
-                using var sr = new StreamReader(fs);
-                content = (await sr.ReadToEndAsync()).Replace("\n\n", "\n");
-            }
-            else
-            {
-                _logger?.LogWarning("Failed to find log file: {f}", logFile);
-                content = $"Failed to find log file: {logFile}";
-            }
-            await mail.Send(new MailMessage("aquamarine5@163.com", "3168287806@qq.com", $"{DateTime.Now:yyMMdd}-log", content));
-            _logger?.LogInformation("Send log file to {m}", "3168287806@qq.com");
+            var service = new LoggingService();
+            logger.Information("Start send log");
+            await service.UploadLog();
+
         });
-        if (args.Length == 0) args = new string[] { "upload" };
-        try
+        registerCommand.SetHandler(async () =>
         {
-            await rootCommand.InvokeAsync(args);
-        }
-        catch(Exception ex)
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName="schtasks",
+                    Arguments = $"/Create /F /SC daily /st 18:00 /TR \"'{Environment.ProcessPath + "' upload"}\" /TN \"Aquacore\\Aquc.Logging.UploadLogFileSchtask\"",
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            await process.WaitForExitAsync();
+            logger.Information($"Register successfully.");
+        });
+        var rootCommand = new RootCommand()
         {
-            _logger?.LogError("{ex} {msg}", ex.Message, ex.StackTrace);
-        }
+            createCommand,
+            registerCommand,
+            uploadCommand
+        };
+        await rootCommand.InvokeAsync(args);
+        ConsoleFix.FreeBind();
     }
 }
