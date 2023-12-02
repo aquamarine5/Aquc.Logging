@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Aquc.Logging": {
+      "commandName": "Project"
+    },
+    "Aquc.Logging:upload": {
+      "commandName": "Project",
+      "commandLineArgs": "upload"
+    }
+  }
+}
