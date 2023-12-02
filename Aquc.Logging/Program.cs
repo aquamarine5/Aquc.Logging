@@ -1,7 +1,9 @@
 ﻿using Serilog;
 using Serilog.Core;
 using System.CommandLine;
+using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Mail;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -44,6 +46,21 @@ public class LoggingProgram
             logger.Information("Start send log");
             await service.UploadLog();
 
+        });
+        registerCommand.SetHandler(async () =>
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName="schtasks",
+                    Arguments = $"/Create /F /SC daily /st 18:00 /TR \"'{Environment.ProcessPath + "' upload"}\" /TN \"Aquacore\\Aquc.Logging.UploadLogFileSchtask\"",
+                    CreateNoWindow = true
+                }
+            };
+            process.Start();
+            await process.WaitForExitAsync();
+            logger.Information($"Register successfully.");
         });
         var rootCommand = new RootCommand()
         {
