@@ -1,6 +1,8 @@
 ﻿using Serilog;
 using Serilog.Core;
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
@@ -68,7 +70,18 @@ public class LoggingProgram
             registerCommand,
             uploadCommand
         };
-        await rootCommand.InvokeAsync(args);
+
+        await new CommandLineBuilder(rootCommand)
+           .UseVersionOption()
+           .UseHelp()
+           .UseEnvironmentVariableDirective()
+           .UseParseDirective()
+           .RegisterWithDotnetSuggest()
+           .UseTypoCorrections()
+           .UseParseErrorReporting()
+           .CancelOnProcessTermination()
+           .Build()
+           .InvokeAsync(args);
         ConsoleFix.FreeBind();
     }
 }
